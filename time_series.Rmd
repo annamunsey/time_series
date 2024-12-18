@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 
 ```{r load-packages}
 
-list.of.packages <- c("astsa", "tidyverse", "here")
+list.of.packages <- c("astsa", "nlme", "lmtest", "forecast", "tidyverse", "here")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 #loads:
@@ -46,7 +46,7 @@ lag1.plot(x,1)
 # there is a moderately strong positive linear association so an AR(1) model might be a useful model
 
 #sample ACF of the series:
-(sample_acf<-acf(x, xlim = c(1,19)))      # plots the ACF of x for lags 1 to 19
+(sample_acf <- acf(x, xlim = c(1,19)))      # plots the ACF of x for lags 1 to 19
 # 
 # The sample autocorrelations taper, although not as fast as they should for an AR(1)
 # Theoretically the lag 2 autocorrelation for an AR(1) = squared value of lag 1 autocorrelation
@@ -62,10 +62,27 @@ summary(ar1fit)                    # regression results
 # lag1 slope coefficient is significantly different from 0, indicating a helpful predictor
 # R-squared of 29.7% is weak, so model won't yield great predictions
 
-plot(ar1fit$fit,ar1fit$residuals)    # plot of residuals versus fits - fine
+plot(ar1fit$fit, ar1fit$residuals)    # plot of residuals versus fits - fine
+
+#assess residuals:
 
 # ACF of model residuals of AR(1) model:
 acf(ar1fit$residuals, xlim=c(1,18))  # ACF of the residuals for lags 1 to 18 - fine
+
+ggtsdisplay(residuals(ar1fit))
+
+# check for normality
+shapiro.test(resid(ar1fit))
+# p > 0.05, so distribution is fine
+
+# check for homoscedasticity (is error term constant across observations?)
+bptest(ar1fit)
+# p > 0.05, so no evidence of heteroscedasticity/assumption of  homoscedasticity holds
+
+# check for autocorrelation in residuals
+Box.test(residuals(ar1fit), lag = 2, type = "Ljung-Box")
+# p > 0.05, so residuals are independent
+
 ```
 
 
