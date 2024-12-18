@@ -1,0 +1,71 @@
+---
+title: "time_series"
+output: html_document
+date: "2024-12-17"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+### Load (and install) required packages
+
+```{r load-packages}
+
+list.of.packages <- c("astsa", "tidyverse", "here")
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages)) install.packages(new.packages)
+#loads:
+lapply(list.of.packages, require, character.only = TRUE)
+
+#package conflicts:
+filter = stats::filter
+lag = stats::lag
+
+#use these for dplyr
+Lag <- dplyr::lag     
+Filter <- dplyr::filter 
+```
+
+
+
+Example from https://online.stat.psu.edu/stat510/lesson/1/1.3
+Annual number of earthquakes with seismic magnitude over 7.0, for 99 consecutive years
+
+```{r AR(1) example}
+
+x = scan("quakes.dat")
+
+# tell R that x is a time series
+x = ts(x)                  
+
+plot(x, type="b")        
+
+# to begin to determine whether an AR(1) might work, plot values against lag 1 values
+lag1.plot(x,1)  
+# there is a moderately strong positive linear association so an AR(1) model might be a useful model
+
+#sample ACF of the series:
+(sample_acf<-acf(x, xlim = c(1,19)))      # plots the ACF of x for lags 1 to 19
+# 
+# The sample autocorrelations taper, although not as fast as they should for an AR(1)
+# Theoretically the lag 2 autocorrelation for an AR(1) = squared value of lag 1 autocorrelation
+# Here, the observed lag 2 autocorrelation = .418884, greater than the squared value of the first lag autocorrelation (.5417332= 0.293). 
+# However, we'll see an AR(1) model for the data looks ok. The sample ACF will rarely fit a perfect theoretical pattern.
+
+
+xlag1 = stats::lag(x,-1)           # creates a lag 1 of x variable
+y = cbind(x,xlag1)                 # bind variable with lags
+ar1fit = lm(y[,1]~y[,2])           # does regression, stores results object named ar1fit
+summary(ar1fit)                    # regression results
+# interp:
+# lag1 slope coefficient is significantly different from 0, indicating a helpful predictor
+# R-squared of 29.7% is weak, so model won't yield great predictions
+
+plot(ar1fit$fit,ar1fit$residuals)    # plot of residuals versus fits - fine
+
+# ACF of model residuals of AR(1) model:
+acf(ar1fit$residuals, xlim=c(1,18))  # ACF of the residuals for lags 1 to 18 - fine
+```
+
+
